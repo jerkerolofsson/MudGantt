@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" Version="8.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MudGantt\MudGantt.csproj" />
+    <ProjectReference Include="..\MudGanttDemoApp.ServiceDefaults\MudGanttDemoApp.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

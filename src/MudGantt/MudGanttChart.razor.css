@@ -1,0 +1,85 @@
+﻿.mud-gantt {
+    width: 100%;
+    height: 100%;
+    min-height: 100px;
+    position: relative;
+    overflow: hidden;
+
+    --clr-normal: var(--mud-palette-surface);
+    --clr-darken: var(--mud-palette-surface-darken);
+    --clr-lighten: var(--mud-palette-surface-lighten);
+}
+
+.mud-gantt.mud-color-primary {
+
+    --clr-normal: var(--mud-palette-primary);
+    --clr-darken: var(--mud-palette-primary-darken);
+    --clr-lighten: var(--mud-palette-primary-lighten);
+}
+.mud-gantt.mud-color-secondary {
+
+    --clr-normal: var(--mud-palette-secondary);
+    --clr-darken: var(--mud-palette-secondary-darken);
+    --clr-lighten: var(--mud-palette-secondary-lighten);
+}
+.mud-gantt.mud-color-success {
+    --clr-normal: var(--mud-palette-success);
+    --clr-darken: var(--mud-palette-success-darken);
+    --clr-lighten: var(--mud-palette-success-lighten);
+}
+
+.mud-gantt ::deep rect {
+    transition: opacity linear 100ms;
+}
+
+.mud-gantt ::deep  rect[data-type="edge-left"], 
+.mud-gantt ::deep rect[data-type="edge-right"] {
+    fill: var(--clr-darken);
+    cursor: ew-resize;
+}
+
+.mud-gantt ::deep path[data-type="link-line"] {
+    stroke: var(--mud-palette-gray-default);
+    fill: none;
+}
+.mud-gantt ::deep path[data-type="link-arrow"] {
+    stroke: none;
+    fill: var(--mud-palette-gray-default);
+}
+
+.mud-gantt.mud-variant-filled ::deep rect[data-type="task"] {
+    fill: var(--clr-darken);
+}
+.mud-gantt.mud-variant-outlined ::deep rect[data-type="task"] {
+    stroke: var(--mud-palette-lines-inputs);
+    fill: var(--mud-palette-surface);
+}
+.mud-gantt.mud-variant-filled ::deep rect[data-type="task"][data-hover="true"] {
+    fill: var(--clr-normal);
+}
+.mud-gantt.mud-variant-outlined ::deep rect[data-type="task"][data-hover="true"] {
+    stroke: var(--clr-normal);
+    stroke-width: 2;
+}
+.mud-gantt ::deep rect[data-type="progress"] {
+    fill: var(--clr-normal);
+}
+.mud-gantt ::deep rect[data-type="progress"][data-hover="true"] {
+    fill: var(--clr-lighten);
+}
+
+.mud-gantt ::deep text {
+    dominant-baseline: text-before-edge;
+    font: 8pt sans-serif;
+    user-select: none;
+    fill: var(--mud-palette-text-primary);
+    pointer-events: none;
+}
+
+.mud-gantt ::deep text[data-type="progress-label"] {    
+    dominant-baseline: text-after-edge;
+    font: 6pt sans-serif;
+    user-select: none;
+    fill: var(--mud-palette-text-primary);
+    pointer-events: none;
+}
