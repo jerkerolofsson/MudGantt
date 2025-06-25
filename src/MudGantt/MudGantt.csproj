@@ -10,9 +10,8 @@
     <SupportedPlatform Include="browser" />
   </ItemGroup>
 
-
     <PropertyGroup>
-        <PackageReadmeFile>readme.md</PackageReadmeFile>
+        <PackageReadmeFile>README.MD</PackageReadmeFile>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <AssemblyVersion>1.0.0</AssemblyVersion>
         <Description>Gantt charts for MudBlazor</Description>
