@@ -1,16 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MudGantt
+﻿namespace MudGantt
 {
+    /// <summary>
+    /// Internal data passed with JS interop for rendering the Gantt chart.
+    /// </summary>
     internal class GanttData
     {
+        /// <summary>
+        /// Tasks
+        /// </summary>
         public required IReadOnlyList<MudGanttTask> Items { get; set; }
-        public int Height { get; internal set; }
-        public int Width { get; internal set; }
-        public bool ReadOnly { get; internal set; }
+
+        /// <summary>
+        /// Events, can be null
+        /// </summary>
+        public IReadOnlyList<MudGanttEvent>? Events { get; set; }
+
+        /// <summary>
+        /// If true, the tasks cannot be moved and progress cannot be changed
+        /// </summary>
+        public bool ReadOnly { get; set; }
     }
 }

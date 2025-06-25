@@ -1,11 +1,22 @@
 ﻿@page "/"
 @using MudBlazor
+@using MudBlazor.Utilities
 
 <PageTitle>Home</PageTitle>
 
+<MudThemeProvider IsDarkMode="@_darkMode" />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+<MudDialogProvider MaxWidth="MaxWidth.ExtraLarge" />
+
 <h1>MudGanttChart</h1>
 
-<MudGanttChart Tasks="@_tasks" Color="@_color" Variant="@_variant" Style="height: 600px; width: 800px" ViewboxWidth="800" ViewboxHeight="600" ReadOnly="@_readOnly" />
+<MudGanttChart @bind-Tasks="@_tasks" Events="@_events" Color="@_color" Variant="@_variant" ReadOnly="@_readOnly" />
+
+@foreach(var task in _tasks)
+{
+    <MudText>@task.Name @task.StartDate</MudText>
+}
 
 <MudStack Row>
     <MudPaper Class="pa-5">
@@ -29,40 +40,116 @@
     <MudPaper Class="pa-5">
         <MudCheckBox @bind-Value="@_readOnly">Read-Only</MudCheckBox>
     </MudPaper>
+
+    <MudPaper Class="pa-5">
+        <MudCheckBox @bind-Value="@_darkMode">Dark mode</MudCheckBox>
+
+        <MudButton OnClick="AssignColors">Assign task colors</MudButton>
+        <MudButton OnClick="ClearColors">Clear task colors</MudButton>
+    </MudPaper>
 </MudStack>
 
 @code {
     private Color _color = Color.Primary;
     private Variant _variant = Variant.Filled;
     private bool _readOnly = false;
+    private bool _darkMode = true;
 
-    private List<MudGanttTask> _tasks = [
+    private IReadOnlyList<MudGanttEvent> _events = [
+        new MudGanttEvent { Id = "code-complete", Name = "Code Complete", Date = new DateTimeOffset(2025,6,26,18,0,0,TimeSpan.Zero) },
+        new MudGanttEvent { Id = "general-availability", Name = "GA", Date = new DateTimeOffset(2025,7,3,18,0,0,TimeSpan.Zero) },
+    ];
+
+    private IReadOnlyList<MudGanttTask> _tasks = [
         new MudGanttTask
         {
             Id = "implementation",
             Name = "Implement gantt charts",
-            StartDate = new DateTimeOffset(2026,6,24,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2026,6,25,16,0,0,TimeSpan.Zero),
+            StartDate = new DateTimeOffset(2025,6,24,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,6,26,16,0,0,TimeSpan.Zero),
             Progress = 0.75
         },
 
         new MudGanttTask
         {
-            Id = "tests",
-            Name = "Add tests",
-            StartDate = new DateTimeOffset(2026,6,26,9,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2026,6,26,17,0,0,TimeSpan.Zero),
+            Id = "unit-tests",
+            Name = "Unit Tests",
+            StartDate = new DateTimeOffset(2025,6,27,9,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,6,27,17,0,0,TimeSpan.Zero),
             DependentOn = ["implementation"],
+            Progress = 0
+        },
+        new MudGanttTask
+        {
+            Id = "integration-tests",
+            Name = "Integration Tests",
+            StartDate = new DateTimeOffset(2025,6,27,9,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,6,27,17,0,0,TimeSpan.Zero),
+            DependentOn = ["unit-tests"],
             Progress = 0
         },
 
         new MudGanttTask
         {
-            Id = "release",
+            Id = "bug-fixes",
+            Name = "Bug fixes",
+            Color = "#f22",
+            StartDate = new DateTimeOffset(2025,6,28,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,6,29,16,0,0,TimeSpan.Zero),
+            Progress = 0,
+            DependentOn = ["integration-tests", "unit-tests"]
+        },
+
+        new MudGanttTask
+        {
+            Id = "release1",
             Name = "Release nuget package",
-            StartDate = new DateTimeOffset(2026,6,27,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2026,6,28,0,0,0,TimeSpan.Zero),
-            DependentOn = ["tests"]
+            StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
+            DependentOn = ["bug-fixes"]
+        },
+
+        new MudGanttTask
+        {
+            Id = "release2",
+            Name = "Release nuget package",
+            StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
+            DependentOn = ["bug-fixes"]
+        },
+        new MudGanttTask
+        {
+            Id = "release3",
+            Name = "Release nuget package",
+            StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
+            DependentOn = ["bug-fixes"]
+
+        },
+        new MudGanttTask
+        {
+            Id = "release4",
+            Name = "Release nuget package",
+            StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
+            DependentOn = ["bug-fixes"]
         },
     ];
+
+    private void ClearColors()
+    {
+        foreach(var task in _tasks)
+        {
+            task.Color = null;
+        }
+    }
+    private void AssignColors()
+    {
+        string[] palette = ["#5f0f40", "#9a031e", "#fb8b24", "#e36414", "#0f4c5c"];
+        int offset = Random.Shared.Next();
+        foreach (var item in _tasks.Index())
+        {
+            item.Item.Color = palette[(offset+item.Index) % palette.Length];
+        }
+    }
 }

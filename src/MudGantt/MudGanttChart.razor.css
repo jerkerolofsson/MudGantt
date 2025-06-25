@@ -8,6 +8,12 @@
     --clr-normal: var(--mud-palette-surface);
     --clr-darken: var(--mud-palette-surface-darken);
     --clr-lighten: var(--mud-palette-surface-lighten);
+    --clr-grid-lines: rgba(128,128,128,0.2);
+    --clr-axis-background: var(--mud-palette-surface);
+    --clr-event: #999;
+
+    touch-action: none;
+    overflow: hidden;
 }
 
 .mud-gantt.mud-color-primary {
@@ -22,6 +28,18 @@
     --clr-darken: var(--mud-palette-secondary-darken);
     --clr-lighten: var(--mud-palette-secondary-lighten);
 }
+.mud-gantt.mud-color-tertiary {
+
+    --clr-normal: var(--mud-palette-tertiary);
+    --clr-darken: var(--mud-palette-tertiary-darken);
+    --clr-lighten: var(--mud-palette-tertiary-lighten);
+}
+.mud-gantt.mud-color-error {
+
+    --clr-normal: var(--mud-palette-error);
+    --clr-darken: var(--mud-palette-error-darken);
+    --clr-lighten: var(--mud-palette-error-lighten);
+}
 .mud-gantt.mud-color-success {
     --clr-normal: var(--mud-palette-success);
     --clr-darken: var(--mud-palette-success-darken);
@@ -30,6 +48,24 @@
 
 .mud-gantt ::deep rect {
     transition: opacity linear 100ms;
+}
+
+.mud-gantt ::deep text[data-type="axis-date"] {
+    fill: var(--mud-palette-text-primary);
+}
+
+.mud-gantt ::deep text[data-subtype="year"] {
+    font-weight: bold;
+}
+
+.mud-gantt ::deep text[data-subtype="day"] {
+    opacity: 0.75;
+}
+
+/* Sat, Sun */
+.mud-gantt ::deep text[data-day-of-week="7"], 
+.mud-gantt ::deep text[data-day-of-week="1"] {
+    fill: var(--mud-palette-error);
 }
 
 .mud-gantt ::deep rect[data-type="edge-left"], 
@@ -44,7 +80,7 @@
 }
 
 .mud-gantt ::deep path[data-type="progress-handle"] {
-    fill: var(--mud-palette-primary-text);
+    fill: var(--mud-palette-text-primary);
 }
 
 
@@ -61,6 +97,19 @@
     stroke: none;
     fill: var(--mud-palette-gray-default);
 }
+
+.mud-gantt ::deep line[data-type="grid-line"] {
+    stroke: var(--clr-grid-lines);
+}
+
+.mud-gantt ::deep rect[data-type="axis-background"] {
+    fill: none;
+}
+
+.mud-gantt.mud-variant-filled ::deep rect[data-type="axis-background"] {
+    fill: var(--clr-axis-background);
+}
+
 
 .mud-gantt.mud-variant-filled ::deep rect[data-type="task"] {
     fill: var(--clr-darken);
@@ -87,7 +136,7 @@
     dominant-baseline: text-before-edge;
     font: 8pt sans-serif;
     user-select: none;
-    fill: var(--mud-palette-text-primary);
+    fill: var(--mud-palette-primary-text);
     pointer-events: none;
 }
 
@@ -95,6 +144,22 @@
     dominant-baseline: text-after-edge;
     font: 6pt sans-serif;
     user-select: none;
+    fill: var(--mud-palette-primary-text);
+    pointer-events: none;
+}
+
+
+.mud-gantt ::deep text[data-type="event"] {    
+    font: 8pt sans-serif;
     fill: var(--mud-palette-text-primary);
     pointer-events: none;
+}
+
+.mud-gantt ::deep line[data-type="event-line"] {
+    stroke: var(--clr-event);
+    stroke-dasharray: 5,5;
+}
+
+.mud-gantt ::deep path[data-type="event-shape"] {    
+    fill: var(--clr-event);
 }

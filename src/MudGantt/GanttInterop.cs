@@ -22,10 +22,10 @@ namespace MudGantt
             }
         }
 
-        internal async Task CreateAsync(string id)
+        internal async Task CreateAsync(string id, object callback)
         {
             var module = await moduleTask.Value;
-            await module.InvokeAsync<string>("initGantt", id, $"#{id}");
+            await module.InvokeAsync<string>("initGantt", id, $"#{id}", callback);
         }
 
         internal async Task UpdateAsync(string id, GanttData data)
