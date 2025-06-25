@@ -254,6 +254,10 @@ class GanntChart {
 
     #createAxis() {
 
+        if (!this.minDate) {
+            return;
+        }
+
         const state = {};
 
         // axis header background
@@ -309,7 +313,7 @@ class GanntChart {
     #addAxisDateLabel(state, x, axisDate, textAnchor) {
 
         // Note: moment.js is required
-        if (typeof moment !== "undefined") {
+        if (typeof moment !== "undefined" && axisDate) {
             const m = moment(axisDate);
             let label = m.format("yyyy-MM-DD")
 
