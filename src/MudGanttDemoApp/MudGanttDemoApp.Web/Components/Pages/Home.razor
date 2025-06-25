@@ -3,29 +3,38 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>MudGanttChart</h1>
 
-<MudGanttChart Tasks="@_tasks" Color="@_color" Variant="@_variant" Style="height: 400px" />
+<MudGanttChart Tasks="@_tasks" Color="@_color" Variant="@_variant" Style="height: 600px; width: 800px" ViewboxWidth="800" ViewboxHeight="600" ReadOnly="@_readOnly" />
 
 <MudStack Row>
-    <MudRadioGroup @bind-Value="@_color">
-        <MudRadio Value="Color.Primary">Primary</MudRadio>
-        <MudRadio Value="Color.Secondary">Secondary</MudRadio>
-        <MudRadio Value="Color.Tertiary">Tertiary</MudRadio>
-        <MudRadio Value="Color.Success">Success</MudRadio>
-        <MudRadio Value="Color.Default">Default</MudRadio>
-        <MudRadio Value="Color.Surface">Surface</MudRadio>
-    </MudRadioGroup>
+    <MudPaper Class="pa-5">
+        <MudRadioGroup @bind-Value="@_color">
+            <MudRadio Value="Color.Primary">Primary</MudRadio>
+            <MudRadio Value="Color.Secondary">Secondary</MudRadio>
+            <MudRadio Value="Color.Tertiary">Tertiary</MudRadio>
+            <MudRadio Value="Color.Success">Success</MudRadio>
+            <MudRadio Value="Color.Default">Default</MudRadio>
+            <MudRadio Value="Color.Surface">Surface</MudRadio>
+        </MudRadioGroup>
+    </MudPaper>
 
-    <MudRadioGroup @bind-Value="@_variant">
-        <MudRadio Value="Variant.Outlined">Outlined</MudRadio>
-        <MudRadio Value="Variant.Filled">Filled</MudRadio>
-    </MudRadioGroup>
+    <MudPaper Class="pa-5">
+        <MudRadioGroup @bind-Value="@_variant">
+            <MudRadio Value="Variant.Outlined">Outlined</MudRadio>
+            <MudRadio Value="Variant.Filled">Filled</MudRadio>
+        </MudRadioGroup>
+    </MudPaper>
+
+    <MudPaper Class="pa-5">
+        <MudCheckBox @bind-Value="@_readOnly">Read-Only</MudCheckBox>
+    </MudPaper>
 </MudStack>
 
 @code {
     private Color _color = Color.Primary;
     private Variant _variant = Variant.Filled;
+    private bool _readOnly = false;
 
     private List<MudGanttTask> _tasks = [
         new MudGanttTask
@@ -33,16 +42,18 @@
             Id = "implementation",
             Name = "Implement gantt charts",
             StartDate = new DateTimeOffset(2026,6,24,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2026,6,25,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2026,6,25,16,0,0,TimeSpan.Zero),
+            Progress = 0.75
         },
 
         new MudGanttTask
         {
             Id = "tests",
             Name = "Add tests",
-            StartDate = new DateTimeOffset(2026,6,26,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2026,6,27,0,0,0,TimeSpan.Zero),
-            DependentOn = ["implementation"]
+            StartDate = new DateTimeOffset(2026,6,26,9,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2026,6,26,17,0,0,TimeSpan.Zero),
+            DependentOn = ["implementation"],
+            Progress = 0
         },
 
         new MudGanttTask

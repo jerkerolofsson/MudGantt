@@ -11,5 +11,6 @@ namespace MudGantt
         public required IReadOnlyList<MudGanttTask> Items { get; set; }
         public int Height { get; internal set; }
         public int Width { get; internal set; }
+        public bool ReadOnly { get; internal set; }
     }
 }

@@ -39,9 +39,10 @@ class GanntChart {
 
         this.options = {};
 
+        this.options.progressHandleSize = 7;
         this.options.arrowSize = 7;
         this.options.arrowPadding = 10;
-        this.options.taskHeight = 25;
+        this.options.taskHeight = 35;
         this.options.edgeSize = 5;
         this.options.textOffsetX = 5;
         this.options.textOffsetY = 2;
@@ -202,6 +203,7 @@ class GanntChart {
         }
         this.viewBoxWidth = data.width;
         this.viewBoxHeight = data.height;
+        this.readOnly = data.readOnly;
 
         this.data = data;
 
@@ -247,7 +249,7 @@ class GanntChart {
             this.ganttChart.appendChild(taskElement);
 
             // Show progress
-            if(task.data.progress !== undefined) {
+            if(task.data.progress !== undefined && task.data.progress !== null) {
 
                 const progressWidth = width * task.data.progress;
 
@@ -271,7 +273,6 @@ class GanntChart {
             edgeLeft.setAttribute('width', this.options.edgeSize);
             edgeLeft.setAttribute('height', task.height);
             edgeLeft.setAttribute('opacity', "0");
-            edgeLeft.style.cursor = "ew-resize";
             task.shapes.edgeLeft = edgeLeft;
             this.ganttChart.appendChild(edgeLeft);
 
@@ -283,7 +284,6 @@ class GanntChart {
             edgeRight.setAttribute('width', this.options.edgeSize);
             edgeRight.setAttribute('height', task.height);
             edgeRight.setAttribute('opacity', "0");
-            edgeRight.style.cursor = "ew-resize";
             task.shapes.edgeRight = edgeRight;
             this.ganttChart.appendChild(edgeRight);
 
@@ -297,9 +297,10 @@ class GanntChart {
             task.shapes.text = textElement;
             this.ganttChart.appendChild(textElement);
 
+            if (task.data.progress !== undefined && task.data.progress !== null) {
+                const progressWidth = width * task.data.progress;
 
-            // Text label for progress
-            if(task.data.progress !== undefined) {
+                // Text label for progress
                 const textProgressElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 textProgressElement.setAttribute('data-type', "progress-label");
                 textProgressElement.setAttribute('x', x + this.options.textOffsetX);
@@ -307,14 +308,41 @@ class GanntChart {
                 textProgressElement.setAttribute('width', width);
                 textProgressElement.setAttribute('height', taskHeight);
                 textProgressElement.innerHTML = Math.round(task.data.progress*100) + "%";
-                task.shapes.textProgress = textProgressElement;
+                task.shapes.progressText = textProgressElement;
                 this.ganttChart.appendChild(textProgressElement);
+
+                // Change progress handle
+                if (!this.readOnly) {
+                    const progressHandleElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    progressHandleElement.setAttribute('data-type', "progress-handle");
+                    this.#createProgressHandlePath(task, progressHandleElement, progressWidth);
+                    task.shapes.progressHandle = progressHandleElement;
+                    this.ganttChart.appendChild(progressHandleElement);
+                }
+
             }
 
             y += rowHeight;
         }
 
         this.createLinks();
+    }
+
+    #createProgressHandlePath(task, progressHandleElement, progressWidth) {
+        const handleSize = this.options.progressHandleSize;
+        const handleSizeHalf = this.options.progressHandleSize / 2;
+        const arrowX = task.left + progressWidth;
+        const arrowY = task.bottom;
+        let dArrow = `M${arrowX} ${arrowY} `;
+        dArrow += `L${arrowX + handleSizeHalf} ${arrowY + handleSize} `;
+        dArrow += `L${arrowX - handleSizeHalf} ${arrowY + handleSize} `;
+        progressHandleElement.setAttribute("d", dArrow);
+
+        task.progressHandleArea = { x: arrowX - handleSizeHalf, y: arrowY, width: handleSize, height: handleSize };
+        task.progressHandleArea.left = task.progressHandleArea.x;
+        task.progressHandleArea.top = task.progressHandleArea.y;
+        task.progressHandleArea.right = task.progressHandleArea.left + task.progressHandleArea.width;
+        task.progressHandleArea.bottom = task.progressHandleArea.y + task.progressHandleArea.height;
     }
 
     #cursorPoint(evt){
@@ -324,37 +352,89 @@ class GanntChart {
         return pt.matrixTransform(this.ganttChart.getScreenCTM().inverse());
     }
     #onMouseDown(event) {
+
+        if (this.readOnly) {
+            return;
+        }
+        this.mouseDownPoint = this.#cursorPoint(event);
+        this.isMoving = false;
+        this.moveTaskArea = null;
         this.dragProgress = false;
-        if(this.hoverLeftEdge || this.hoverRightEdge) {
+        if (this.hoverLeftEdge || this.hoverRightEdge) {
             this.isDragging = true;
-        } else {
-            if(this.hoverTask?.data?.progress !== undefined) {
+        } else if (this.hoverProgressHandle) {
+            if (this.hoverTask?.data?.progress !== undefined && this.hoverTask?.data?.progress !== null) {
                 const task = this.hoverTask;
                 const pt = this.#cursorPoint(event);
-                const progress = (pt.x-task.x) / task.width;
+                const progress = (pt.x - task.x) / task.width;
                 this.setProgress(task, progress);
                 this.isDragging = true;
                 this.dragProgress = true;
                 this.dragTask = task;
             }
+        } else if (this.hoverTask) {
+            const task = this.hoverTask;
+            this.isDragging = true;
+            this.isMoving = true;
+            this.dragTask = task;
+            this.moveTaskArea = { x: task.x, width: task.width, left: task.left, right: task.right };
         }
     }
 
-    setProgress(task, progress) {
+    setProgress(task, progress, raiseEvent) {
         if(progress < 0) {
             progress = 0;
         }
         if(progress > 1) {
             progress = 1;
         }
-        if(task.shapes.progress) {
-            task.shapes.progress.setAttribute("width", progress * task.width);
-        }
-        if(task.shapes.textProgress) {
-            const progressText = Math.round(progress*100.0) + "%";
-            task.shapes.textProgress.innerHTML = progressText;
-        }
         task.data.progress = progress;
+        if(task.shapes.progress) {
+            task.shapes.progress.setAttribute("width", task.data.progress * task.width);
+        }
+        if (task.shapes.progressHandle) {
+            this.#createProgressHandlePath(task, task.shapes.progressHandle, task.data.progress * task.width);
+        }
+        if(task.shapes.progressText) {
+            const progressText = Math.round(progress*100.0) + "%";
+            task.shapes.progressText.innerHTML = progressText;
+        }
+    }
+
+    #snapX(x) {
+        return x;
+        //return parseInt(x/50)*50;
+    }
+
+    #setTaskX(task,x) {
+        x = this.#snapX(x);
+
+        task.x = x;
+        task.left = x;
+        task.right = task.left + task.width;
+
+        this.#onTaskMoved(task);
+    }
+
+    #onTaskMoved(task) {
+        const x = task.x;
+        const width = task.width;
+
+        task.shapes.rect?.setAttribute("x", x);
+        task.shapes.rect?.setAttribute("width", width);
+
+        task.shapes.edgeLeft?.setAttribute("x", x);
+        task.shapes.edgeRight?.setAttribute("x", x + width - this.options.edgeSize);
+
+        task.shapes.text?.setAttribute("x", x + this.options.textOffsetX);
+        task.shapes.progressText?.setAttribute("x", x + this.options.textOffsetX);
+
+        if (task.data.progress !== null && task.data.progress !== undefined) {
+            task.shapes.progress?.setAttribute("x", x);
+            task.shapes.progress?.setAttribute("width", width * task.data.progress);
+            this.setProgress(task, task.data.progress, false);
+        }
+        this.updateLinks();
     }
 
     #updateTaskFromEdges() {
@@ -364,6 +444,7 @@ class GanntChart {
             if (task.left+5 > x) {
                 x = task.left+5;
             }
+            x = this.#snapX(x);
             task.right = x;
             const width = task.right - task.left;
             task.width = width;
@@ -377,6 +458,8 @@ class GanntChart {
                 x = task.right-5;
             }
 
+            x = this.#snapX(x);
+
             task.left = task.x = x;
             const width = task.right - x;
             task.width = width;
@@ -387,10 +470,9 @@ class GanntChart {
             task.shapes.edgeLeft.setAttribute("x", x);
 
             task.shapes.text.setAttribute("x", x + this.options.textOffsetX);
-            if(task.shapes.textProgress) {
-                task.shapes.textProgress.setAttribute("x", x + this.options.textOffsetX);
-            }
+            task.shapes.progressText?.setAttribute("x", x + this.options.textOffsetX);
         }
+        this.setProgress(task, task.data.progress, false);
         this.updateLinks();
     }
 
@@ -405,31 +487,38 @@ class GanntChart {
     }
 
     #onMouseMove(event) {
+
         const pt = this.#cursorPoint(event);
         const nx = pt.x;
         const ny = pt.y;
 
         // console.log(`nx=${nx}`, pt);
 
-        if(this.isDragging && this.dragTask) {
-            if(this.dragProgress)
-            {
+        if (this.isDragging && this.dragTask && !this.readOnly) {
+            if (this.hoverProgressHandle) {
                 const task = this.dragTask;
-                const progress = (pt.x-task.x) / task.width;
-                this.setProgress(task, progress);
+                const progress = (pt.x - task.x) / task.width;
+                this.setProgress(task, progress, true);
             }
-            else if(this.hoverLeftEdge) {
+            else if (this.hoverLeftEdge) {
                 this.dragTask.shapes.edgeLeft.setAttribute("x", pt.x);
                 this.#updateTaskFromEdges();
             }
-            else if(this.hoverRightEdge) {
+            else if (this.hoverRightEdge) {
                 this.dragTask.shapes.edgeRight.setAttribute("x", pt.x);
                 this.#updateTaskFromEdges();
+            } else if (this.isMoving && this.mouseDownPoint && this.moveTaskArea) {
+                // Move the task
+                const deltaX = pt.x - this.mouseDownPoint.x;
+                const x = this.moveTaskArea.x + deltaX;
+                const task = this.dragTask;
+                this.#setTaskX(task,x);
             }
             return;
         }
 
         this.hoverTask = null;
+        this.hoverProgressHandle = false;
         this.hoverLeftEdge = false;
         this.hoverRightEdge = false;
         this.hoverProgress = false;
@@ -438,25 +527,34 @@ class GanntChart {
 
         for (const task of this.tasks) {
 
-             //console.log(`${task.left} ${nx} ${task.left+edgeSize}`);
+            if (task.progressHandleArea && nx >= task.progressHandleArea.left && nx < task.progressHandleArea.right && ny >= task.progressHandleArea.top && ny < task.progressHandleArea.bottom) {
+                this.hoverProgressHandle = true;
+                this.hoverTask = task;
 
-            if (nx >= task.left && nx < task.right && ny >= task.top && ny < task.bottom) {
+                if (!this.readOnly) {
+                    this.dragTask = task;
+                }
+            }
+            else if (nx >= task.left && nx < task.right && ny >= task.top && ny < task.bottom) {
 
                 this.hoverTask = task;
-                this.dragTask = task;
+                if (!this.readOnly) {
+                    this.dragTask = task;
+                }
+
                 task.shapes.rect.setAttribute("data-hover", "true");
                 if (task.shapes.progress) {
                     task.shapes.progress.setAttribute("data-hover", "true");
                 }
 
                 // Over right edge
-                if (nx >= task.right - edgeSize && nx < task.right && ny >= task.top && ny < task.bottom) {
+                if (nx >= task.right - edgeSize && nx < task.right && ny >= task.top && ny < task.bottom && !this.readOnly) {
                     // Hover right
                     this.hoverRightEdge = true;
                     task.shapes.edgeRight.setAttribute("opacity", 1);
                     task.shapes.edgeLeft.setAttribute("opacity", 0);
                 }
-                else if (nx >= task.left && nx < task.left + edgeSize && ny >= task.top && ny < task.bottom) {
+                else if (nx >= task.left && nx < task.left + edgeSize && ny >= task.top && ny < task.bottom && !this.readOnly) {
                     // Hover left
                     this.hoverLeftEdge = true;
                     task.shapes.edgeRight.setAttribute("opacity", 0);
@@ -498,5 +596,4 @@ export function destroyGantt(id) {
     if (window.blazorGanttCharts[id]) {
         delete window.blazorGanttCharts[id]
     }
-
 }

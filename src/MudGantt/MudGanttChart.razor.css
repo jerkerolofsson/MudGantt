@@ -32,11 +32,26 @@
     transition: opacity linear 100ms;
 }
 
-.mud-gantt ::deep  rect[data-type="edge-left"], 
+.mud-gantt ::deep rect[data-type="edge-left"], 
 .mud-gantt ::deep rect[data-type="edge-right"] {
     fill: var(--clr-darken);
     cursor: ew-resize;
 }
+.mud-gantt.read-only ::deep rect[data-type="edge-left"], 
+.mud-gantt.read-only ::deep rect[data-type="edge-right"] {
+    fill: transparent;
+    cursor: unset;
+}
+
+.mud-gantt ::deep path[data-type="progress-handle"] {
+    fill: var(--mud-palette-primary-text);
+}
+
+
+.mud-gantt ::deep path[data-type="progress-handle"]:hover {
+    fill: var(--mud-palette-success);
+}
+
 
 .mud-gantt ::deep path[data-type="link-line"] {
     stroke: var(--mud-palette-gray-default);

@@ -17,14 +17,30 @@
         /// </summary>
         [Parameter] public int ViewboxHeight { get; set; } = 200;
 
+        /// <summary>
+        /// Accent color
+        /// </summary>
         [Parameter] public Color Color { get; set; } = Color.Primary;
+
+        /// <summary>
+        /// UI Variant, Filled or Outlined
+        /// </summary>
         [Parameter] public Variant Variant { get; set; } = Variant.Filled;
 
+        /// <summary>
+        /// List of tasks
+        /// </summary>
         [Parameter] public IReadOnlyList<MudGanttTask>? Tasks { get; set; }
+
+        /// <summary>
+        /// Read-only mode. If true, the chart will not allow any interaction.
+        /// </summary>
+        [Parameter] public bool ReadOnly { get; set; } = false;
 
         public string CssClass => new CssBuilder("mud-gantt")
             .AddClass("mud-color-" + Color.ToDescriptionString().ToLowerInvariant(), true)
             .AddClass("mud-variant-" + this.Variant.ToDescriptionString().ToLowerInvariant(), true)
+            .AddClass("read-only", ReadOnly)
             .Build();
 
         private GanttInterop? _interop;
@@ -55,12 +71,15 @@
 
         private GanttData CreateData()
         {
-            return new GanttData { Items = Tasks ?? [], Width = ViewboxWidth, Height = ViewboxHeight };
+            return new GanttData { Items = Tasks ?? [], Width = ViewboxWidth, Height = ViewboxHeight, ReadOnly = ReadOnly };
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
-            return ValueTask.CompletedTask;
+            if (_interop is not null)
+            {
+                await _interop.DisposeAsync();
+            }
         }
     }
 }
