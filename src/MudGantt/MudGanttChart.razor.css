@@ -63,8 +63,8 @@
 }
 
 /* Sat, Sun */
-.mud-gantt ::deep text[data-day-of-week="7"], 
-.mud-gantt ::deep text[data-day-of-week="1"] {
+.mud-gantt ::deep text[data-day-of-week="6"], 
+.mud-gantt ::deep text[data-day-of-week="7"] {
     fill: var(--mud-palette-error);
 }
 
