@@ -63,11 +63,30 @@
     private IReadOnlyList<MudGanttTask> _tasks = [
         new MudGanttTask
         {
-            Id = "implementation",
-            Name = "Implement gantt charts",
+            Id = "implementation-epic",
+            Name = "Gantt chart development",
             StartDate = new DateTimeOffset(2025,6,24,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,6,26,18,0,0,TimeSpan.Zero),
+            Progress = 0.8
+        },
+
+        new MudGanttTask
+        {
+            Id = "implementation-js",
+            Name = "gantt.js",
+            StartDate = new DateTimeOffset(2025,6,24,8,0,0,TimeSpan.Zero),
             EndDate = new DateTimeOffset(2025,6,26,16,0,0,TimeSpan.Zero),
-            Progress = 0.75
+            Progress = 0.85,
+            Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)],
+        },
+        new MudGanttTask
+        {
+            Id = "implementation-blazor",
+            Name = "Blazor component",
+            StartDate = new DateTimeOffset(2025,6,25,0,0,0,TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025,6,26,18,0,0,TimeSpan.Zero),
+            Progress = 0.95,
+            Links = [new Link("implementation-epic", LinkType.StartToStart), new Link("implementation-epic", LinkType.FinishToFinish)],
         },
 
         new MudGanttTask
@@ -75,9 +94,9 @@
             Id = "unit-tests",
             Name = "Unit Tests",
             StartDate = new DateTimeOffset(2025,6,27,9,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,6,27,17,0,0,TimeSpan.Zero),
-            DependentOn = ["implementation"],
-            Progress = 0
+            EndDate = new DateTimeOffset(2025,6,27,10,0,0,TimeSpan.Zero),
+            Links = [new Link("implementation-epic", LinkType.FinishToStart)],
+            Progress = 1.0
         },
         new MudGanttTask
         {
@@ -85,55 +104,30 @@
             Name = "Integration Tests",
             StartDate = new DateTimeOffset(2025,6,27,9,0,0,TimeSpan.Zero),
             EndDate = new DateTimeOffset(2025,6,27,17,0,0,TimeSpan.Zero),
-            DependentOn = ["unit-tests"],
-            Progress = 0
+            Links = [new Link("implementation-epic", LinkType.FinishToStart)],
+            Progress = 0.8
         },
 
         new MudGanttTask
         {
             Id = "bug-fixes",
             Name = "Bug fixes",
-            Color = "#f22",
+            Color = "#0d7694",
             StartDate = new DateTimeOffset(2025,6,28,0,0,0,TimeSpan.Zero),
             EndDate = new DateTimeOffset(2025,6,29,16,0,0,TimeSpan.Zero),
-            Progress = 0,
-            DependentOn = ["integration-tests", "unit-tests"]
+            Progress = 0.35,
+            Links = [new Link("integration-tests", LinkType.FinishToStart), new Link("unit-tests", LinkType.FinishToStart)]
         },
 
         new MudGanttTask
         {
             Id = "release1",
+            Color = "#40B090",
             Name = "Release nuget package",
             StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
             EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
-            DependentOn = ["bug-fixes"]
-        },
-
-        new MudGanttTask
-        {
-            Id = "release2",
-            Name = "Release nuget package",
-            StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
-            DependentOn = ["bug-fixes"]
-        },
-        new MudGanttTask
-        {
-            Id = "release3",
-            Name = "Release nuget package",
-            StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
-            DependentOn = ["bug-fixes"]
-
-        },
-        new MudGanttTask
-        {
-            Id = "release4",
-            Name = "Release nuget package",
-            StartDate = new DateTimeOffset(2025,7,2,0,0,0,TimeSpan.Zero),
-            EndDate = new DateTimeOffset(2025,7,3,0,0,0,TimeSpan.Zero),
-            DependentOn = ["bug-fixes"]
-        },
+            Links = [new Link("bug-fixes", LinkType.FinishToStart)]
+        }
     ];
 
     private void ClearColors()

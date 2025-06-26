@@ -38,9 +38,9 @@
         public string? Color { get; set; }
 
         /// <summary>
-        /// Gets or sets the list of task IDs that this task depends on.
+        /// Gets or sets the list of links with task IDs and type.
         /// </summary>
-        public string[] DependentOn { get; set; } = [];
+        public Link[] Links { get; set; } = [];
 
         /// <summary>
         /// Gets the color used for the progress bar, derived from <see cref="Color"/> and lightened.

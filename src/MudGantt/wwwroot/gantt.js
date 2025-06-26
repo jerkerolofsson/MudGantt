@@ -28,12 +28,40 @@ class GanttTask {
     }
 }
 
+class LinkType {
+
+    /// <summary>
+    /// The linked task ends before the successor can begin.
+    /// Arrow from the end of the linked task to the start of the this task.
+    /// </summary>
+    static FinishToStart = 1;
+
+    /// <summary>
+    /// The linked task begins before the successor can end.
+    /// Arrow from the start of the linked task to the end of the this task.
+    /// </summary>
+    static StartToFinish = 2;
+
+    /// <summary>
+    /// The linked task begins before the successor can begin.
+    /// Arrow from the start of the linked task to the start of the this task.
+    /// </summary>
+    static StartToStart = 3;
+
+    /// <summary>
+    /// The linked task ends before the successor can end.
+    /// Arrow from the end of the linked task to the end of the this task.
+    /// </summary>
+    static FinishToFinish = 4;
+}
+
 class GanntChart {
     constructor(id, selector, callback) {
         this.id = id;
         this.selector = selector;
         this.callback = callback;
         this.container = document.querySelector(selector);
+        this.movedTasks = [];
         if (!this.container) {
             console.error(`Container with selector ${selector} not found.`);
             return;
@@ -41,7 +69,6 @@ class GanntChart {
 
         const observer = new ResizeObserver(() => {
             if (this.data) {
-                console.log("on resize");
                 this.updateData(this.data);
             }
         });
@@ -58,11 +85,11 @@ class GanntChart {
         this.options.progressHandleSize = 7;
         this.options.arrowSize = 7;
         this.options.arrowPadding = 10;
-        this.options.taskHeight = 35;
+        this.options.taskHeight = 40;
         this.options.taskSpacing = 10;
         this.options.edgeSize = 5;
-        this.options.textOffsetX = 5;
-        this.options.textOffsetY = 2;
+        this.options.textOffsetX = 6;
+        this.options.textOffsetY = 4;
 
         this.tasks = [];
     }
@@ -153,7 +180,6 @@ class GanntChart {
             this.maxDate.setUTCHours(23);
             this.maxDate.setUTCMinutes(59);
             this.maxDate.setUTCSeconds(59);
-
         }
 
         if (this.minDate && this.options.timelineEpochPadding != 0) {
@@ -172,65 +198,148 @@ class GanntChart {
     	if(this.minDate) {
     		this.minEpochs = this.minDate.getTime();
     		this.maxEpochs = this.maxDate.getTime();
-    		this.range = this.maxEpochs - this.minEpochs;
+            this.range = this.maxEpochs - this.minEpochs;
+
+            const dayEpochs = 24 * 3600 * 1000;
+            this.dayInPixels = dayEpochs / this.range * this.viewBoxWidth;
     	}
     }
 
-    createLinks() {
+
+    #createLinks() {
         const links = [];
         for(const task of this.tasks) {
-            if(task.data.dependentOn) {
-                for (const taskId of task.data.dependentOn) {
-                    const matches = [...this.tasks.filter(x => x.data.id == taskId)];
+            if(task.data.links) {
+                for (const taskLink of task.data.links) {
+                    const matches = [...this.tasks.filter(x => x.data.id == taskLink.id)];
                     for (const task2 of matches) {
-                        links.push({task1: task, task2: task2});
+                        links.push({ task1: task, task2: task2, linkType: taskLink.linkType});
                     }
                 }
             }
         }
         for (const link of links) {
-            this.createLink(link.task1, link.task2);
+            this.#createLink(link.task1, link.task2, link.linkType);
         }
     }
 
-    createLink(task1, task2) {
+    #createLinkPathFinishToStart(task1, task2) {
 
         const spacing = this.options.arrowPadding;
 
-        const pathLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        pathLine.setAttribute("data-type", "link-line");
-
-        let d = `M${task1.x} ${task1.y + task1.height/2} `;
+        let d = `M${task1.x} ${task1.y + task1.height / 2} `;
 
         const yDelta = task2.y - task1.y;
         const xDelta = task2.right - task1.left;
 
-        if(xDelta > -spacing*2) {
+        if (xDelta > -spacing * 2) {
 
             d += `h ${-spacing} `; // horizontal delta
-            d += `v ${yDelta/2} `; // vertical delta1
+            d += `v ${yDelta / 2} `; // vertical delta1
             d += `h ${xDelta + spacing + spacing} `; // horizontal delta
-            d += `v ${yDelta/2} `; // vertical delta2
+            d += `v ${yDelta / 2} `; // vertical delta2
             d += `h ${-spacing} `; // horizontal delta
         } else {
 
-            d += `h ${xDelta+spacing} `; // horizontal delta
+            d += `h ${xDelta + spacing} `; // horizontal delta
             d += `v ${yDelta} `; // vertical
             d += `h ${-spacing} `; // horizontal delta
         }
+        return d;
+    }
+
+    #createLinkPathFinishToFinish(task1, task2) {
+        const spacing = this.options.arrowPadding;
+
+        let d = `M${task1.right} ${task1.y + task1.height / 2} `;
+
+        const yDelta = task2.y - task1.y;
+        const xDelta = task2.right - task1.right;
+
+        //console.log(xDelta);
+        if (xDelta > 0) {
+            d += `h ${spacing + xDelta} `; // horizontal delta
+            d += `v ${yDelta} `; // vertical delta1
+            d += `h ${-spacing} `; // horizontal delta
+        } else {
+            d += `h ${spacing} `; // horizontal delta
+            d += `v ${yDelta} `; // vertical delta1
+            d += `h ${xDelta - spacing} `; // horizontal delta
+        }
+        //console.log(d);
+        return d;
+    }
+    #createLinkPathStartToStart(task1, task2) {
+        const spacing = this.options.arrowPadding;
+
+        let d = `M${task1.x} ${task1.y + task1.height / 2} `;
+
+        const yDelta = task2.y - task1.y;
+        const xDelta = task2.left - task1.left;
+
+        if (xDelta < 0) {
+            d += `h ${-spacing + xDelta} `; // horizontal delta
+            d += `v ${yDelta} `; // vertical delta1
+            d += `h ${spacing} `; // horizontal delta
+        } else {
+            d += `h ${-spacing} `; // horizontal delta
+            d += `v ${yDelta} `; // vertical delta1
+            d += `h ${xDelta + spacing} `; // horizontal delta
+        }
+        return d;
+    }
+
+    #createLinkArrowStart(task1) {
+        const arrowSize = this.options.arrowSize;
+        const arrowX = task1.left;
+        const arrowY = task1.top + task1.height / 2;
+        let d = `M${arrowX} ${arrowY} `;
+        d += `L${arrowX - arrowSize} ${arrowY - arrowSize / 2} `;
+        d += `M${arrowX - arrowSize} ${arrowY + arrowSize / 2} `;
+        d += `L${arrowX} ${arrowY} `;
+        return d;
+    }
+
+
+    #createLinkArrowEnd(task1) {
+        const arrowSize = this.options.arrowSize;
+        const arrowX = task1.right;
+        const arrowY = task1.top + task1.height / 2;
+        let d = `M${arrowX} ${arrowY} `;
+        d += `L${arrowX + arrowSize} ${arrowY - arrowSize / 2} `;
+        d += `M${arrowX + arrowSize} ${arrowY + arrowSize / 2} `;
+        d += `L${arrowX} ${arrowY} `;
+        return d;
+    }
+
+    #createLink(task1, task2, linkType) {
+
+        const pathLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        pathLine.setAttribute("data-type", "link-line");
+
+        let d = "";
+        if (linkType == LinkType.FinishToStart) {
+            d = this.#createLinkPathFinishToStart(task1, task2);
+        } else if (linkType == LinkType.StartToFinish) {
+            d = this.#createLinkPathFinishToStart(task2, task1);
+        } else if (linkType == LinkType.StartToStart) {
+            d = this.#createLinkPathStartToStart(task2, task1);
+        } else if (linkType == LinkType.FinishToFinish) {
+            d = this.#createLinkPathFinishToFinish(task1, task2);
+        }
+        pathLine.setAttribute("data-link-id", `${task1.id}-${task2.id}`);
+        pathLine.setAttribute("data-link-type", linkType);
         pathLine.setAttribute("d", d);
 
         // Arrow
-        let arrowSize = this.options.arrowSize;
         const pathArrow = document.createElementNS("http://www.w3.org/2000/svg", "path");
         pathArrow.setAttribute("data-type", "link-arrow");
-        const arrowX = task1.left;
-        const arrowY = task1.top + task1.height / 2;
-        let dArrow = `M${arrowX} ${arrowY} `;
-        dArrow += `L${arrowX - arrowSize} ${arrowY - arrowSize / 2} `;
-        dArrow += `L${arrowX - arrowSize} ${arrowY + arrowSize / 2} `;
-        //dArrow += `L${arrowX} ${arrowY} `;
-        pathArrow.setAttribute("d", dArrow);
+        pathArrow.setAttribute("data-link-id", `${task1.id}-${task2.id}`);
+        if (linkType == LinkType.FinishToStart || linkType == LinkType.StartToStart) {
+            pathArrow.setAttribute("d", this.#createLinkArrowStart(task1));
+        } else {
+            pathArrow.setAttribute("d", this.#createLinkArrowEnd(task2));
+        }
 
         this.ganttChart.insertBefore(pathLine, this.ganttChart.firstChild);
         this.ganttChart.insertBefore(pathArrow, this.ganttChart.firstChild);
@@ -238,12 +347,12 @@ class GanntChart {
         task1.shapes.links.push(pathArrow);
     }
 
-    updateLinks() {
-        this.removeLinks();
-        this.createLinks();
+    #updateLinks() {
+        this.#removeLinks();
+        this.#createLinks();
     }
 
-    removeLinks() {
+    #removeLinks() {
         for(const task of this.tasks) {
             for(const link of task.shapes.links) {
                 link.remove();
@@ -386,6 +495,12 @@ class GanntChart {
         line.setAttribute('y2', this.viewBoxHeight - this.options.footerHeight);
         this.ganttChart.appendChild(line);
     }
+    #addToday() {
+        const evtEpochs = new Date().getTime();
+        const relativeEpochs = (evtEpochs - this.minEpochs);
+        const x = relativeEpochs * this.viewBoxWidth / this.range;
+        this.#addGridLine(x, "today-line");
+    }
 
     #addEvents() {
         for (const evt of this.data.events) {
@@ -440,6 +555,8 @@ class GanntChart {
             this.#createAxis();
             y += this.options.axisHeight;
         }
+
+        this.#addToday();
 
         if (this.data.events && this.data.events.length > 0) {
             this.#addEvents();
@@ -558,7 +675,7 @@ class GanntChart {
             y += rowHeight;
         }
 
-        this.createLinks();
+        this.#createLinks();
     }
 
     #createProgressHandlePath(task, progressHandleElement, progressWidth) {
@@ -566,12 +683,13 @@ class GanntChart {
         const handleSizeHalf = this.options.progressHandleSize / 2;
         const arrowX = task.left + progressWidth;
         const arrowY = task.bottom;
-        let dArrow = `M${arrowX} ${arrowY} `;
-        dArrow += `L${arrowX + handleSizeHalf} ${arrowY + handleSize} `;
-        dArrow += `L${arrowX - handleSizeHalf} ${arrowY + handleSize} `;
+        let dArrow = `M${arrowX} ${arrowY - handleSize} `;
+        dArrow += `L${arrowX + handleSizeHalf} ${arrowY} `;
+        dArrow += `L${arrowX - handleSizeHalf} ${arrowY} `;
+        dArrow += `L${ arrowX } ${ arrowY - handleSize } `
         progressHandleElement.setAttribute("d", dArrow);
 
-        task.progressHandleArea = { x: arrowX - handleSizeHalf, y: arrowY, width: handleSize, height: handleSize };
+        task.progressHandleArea = { x: arrowX - handleSizeHalf, y: arrowY-handleSize, width: handleSize, height: handleSize };
         task.progressHandleArea.left = task.progressHandleArea.x;
         task.progressHandleArea.top = task.progressHandleArea.y;
         task.progressHandleArea.right = task.progressHandleArea.left + task.progressHandleArea.width;
@@ -585,9 +703,6 @@ class GanntChart {
         return pt.matrixTransform(this.ganttChart.getScreenCTM().inverse());
     }
     #onMouseDown(event) {
-
-        console.log("#onMouseDown");
-
         if (this.readOnly) {
             return;
         }
@@ -641,23 +756,89 @@ class GanntChart {
     }
 
     #snapX(x) {
+        const n = x / this.viewBoxWidth;
+        const epochs = n * this.range + this.minEpochs;
+        const date = new Date(epochs);
+        const dayStart = new Date(epochs);
+        dayStart.setHours(0);
+        dayStart.setMinutes(0);
+        dayStart.setSeconds(0);
+        const diff = dayStart - date;
+        //console.log(`diff=${diff}`, date)
+
+        //console.log(`this.dayInPixels: ${this.dayInPixels}`);
         return x;
-        //return parseInt(x/50)*50;
     }
 
-    #setTaskX(task,x) {
+    #setTaskX(task, x, recursionGuard) {
         x = this.#snapX(x);
+
+        if (this.movedTasks.indexOf(task) == -1) {
+            this.movedTasks.push(task);
+        }
 
         task.x = x;
         task.left = x;
         task.right = task.left + task.width;
-
-        this.#onTaskMoved(task);
+        this.#calculateTaskDatesFromLocation(task);
+        this.#onTaskMoved(task, recursionGuard);
     }
 
-    #onTaskMoved(task) {
+
+    #setTaskRight(task, right, recursionGuard) {
+        if (this.movedTasks.indexOf(task) == -1) {
+            this.movedTasks.push(task);
+        }
+
+        task.right = right;
+        task.width = task.right - task.left;
+        this.#calculateTaskDatesFromLocation(task);
+        this.#onTaskMoved(task, recursionGuard);
+    }
+
+    #getLinks(task) {
+        const links = [];
+
+        if (task.data.links) {
+            for (const link of task.data.links) {
+                const matches = [...this.tasks.filter(x => x.data.id == link.id)];
+                for (const task2 of matches) {
+                    links.push({ task1: task, task2: task2, linkType: link.linkType });
+                }
+
+            }
+        }
+
+        //// Get all links referring to the specified task
+        for (const task1 of this.tasks) {
+            if (task1.id != task.id && task1.data.links) {
+                for (const taskLink of task1.data.links) {
+                    const matches = [...this.tasks.filter(x => x.data.id == taskLink.id)];
+                    for (const task2 of matches) {
+                        if (task1.id == task.id || task2.id == task.id) {
+                            links.push({ task1: task1, task2: task2, linkType: taskLink.linkType });
+                        }
+                    }
+                }
+            }
+        }
+        return links;
+    }
+
+    #onTaskMoved(task, recursionGuard) {
+
+        recursionGuard ??= 0;
+        if (recursionGuard > 50) {
+            return;
+        }
+
+        if (this.movedTasks.indexOf(task) == -1) {
+            this.movedTasks.push(task);
+        }
+
         const x = task.x;
         const width = task.width;
+        task.right = task.x + task.width;
 
         task.shapes.rect?.setAttribute("x", x);
         task.shapes.rect?.setAttribute("width", width);
@@ -673,8 +854,70 @@ class GanntChart {
             task.shapes.progress?.setAttribute("width", width * task.data.progress);
             this.setProgress(task, task.data.progress, false);
         }
-        this.updateLinks();
 
+        // Move successors
+        const links = this.#getLinks(task);
+        for (const link of links) {
+
+            const predecessor = link.task1;
+            const successor = link.task2;
+
+            if (link.linkType == LinkType.FinishToFinish) {
+                
+                if (successor.right < predecessor.right) {
+                    //console.log(`FinishToFinish ${predecessor.id} ${successor.id}`, link);
+                    this.#setTaskRight(successor, predecessor.right, recursionGuard + 1);
+                }
+            }
+            else if (link.linkType == LinkType.StartToStart) {
+                
+                if (successor.x > predecessor.x) {
+                    //console.log(`StartToStart ${predecessor.id}.x=${predecessor.x} ${successor.id}.x=${successor.x}`, link);
+                    this.#setTaskX(successor, predecessor.x, recursionGuard + 1);
+                }
+            }
+            else if (link.linkType == LinkType.FinishToStart) {
+                
+                if (successor.right > predecessor.x) {
+                    //console.log(`FinishToStart ${predecessor.id} ${successor.id}`, link);
+                    this.#setTaskX(predecessor, successor.right, recursionGuard + 1);
+                }
+            } else {
+                console.log(`${link.linkType}: ${predecessor.id} ${successor.id}`, link);
+            }
+        }
+       
+        this.#updateLinks();
+    }
+
+    #clamp(task) {
+        const links = this.#getLinks(task);
+        for (const link of links) {
+
+            const predecessor = link.task1;
+            const successor = link.task2;
+
+            if (link.linkType == LinkType.FinishToFinish) {
+                if (successor.right < predecessor.right && predecessor.id == task.id) {
+                    task.right = successor.right;
+                }
+            }
+            else if (link.linkType == LinkType.StartToStart && task.id == predecessor.id) {
+                console.log(`#clamp pre=${predecessor.id}.x=${predecessor.x} suc=${successor.id}.x=${successor.x}`, link);
+                if (task.x < successor.x) {
+                    task.left = task.x = successor.x;
+                }
+            }
+            else if (link.linkType == LinkType.FinishToStart) {
+
+                if (task.id == predecessor.id && successor.right > predecessor.x) {
+                    task.left = predecessor.x = successor.right;
+                }
+                if (task.id == successor.id && successor.right > predecessor.x) {
+                    task.right = predecessor.x;
+                }
+            }
+        }
     }
 
     #updateTaskFromEdges() {
@@ -685,10 +928,12 @@ class GanntChart {
                 x = task.left+5;
             }
             x = this.#snapX(x);
-            task.right = x;
-            const width = task.right - task.left;
-            task.width = width;
 
+            task.right = x;
+            this.#clamp(task);
+            task.width = Math.max(0,task.right - task.left);
+
+            this.#calculateTaskDatesFromLocation(task);
             this.#onTaskMoved(task);
         }
         else if(this.hoverLeftEdge) {
@@ -700,16 +945,15 @@ class GanntChart {
             x = this.#snapX(x);
 
             task.left = task.x = x;
-            const width = task.right - x;
-            task.width = width;
+            this.#clamp(task);
+            task.width = Math.max(0, task.right - task.x);
 
+            this.#calculateTaskDatesFromLocation(task);
             this.#onTaskMoved(task);
         }
     }
 
     #onMouseUp(event) {
-        console.log("#onMouseUp");
-
         if(this.isDragging) {
             if(this.isDragging && this.dragTask) {
                 this.#updateTaskFromEdges();
@@ -726,16 +970,19 @@ class GanntChart {
         }
 
         if ((this.isMoving || this.hoverLeftEdge || this.hoverRightEdge) && this.dragTask) {
-            this.#updateViewport(this.dragTask);
 
-            if (this.callback) {
-                this.callback.invokeMethodAsync("OnTaskMovedAsync", this.dragTask.id, this.dragTask.startDate?.toISOString(), this.dragTask.endDate?.toISOString());
+            for (const task of this.movedTasks) {
+
+                if (this.callback) {
+                    this.callback.invokeMethodAsync("OnTaskMovedAsync", task.id, task.startDate?.toISOString(), task.endDate?.toISOString());
+                }
+                this.movedTasks = [];
             }
+            this.#updateViewport();
         }
     }
 
-    #updateViewport(task) {
-
+    #calculateTaskDatesFromLocation(task) {
         // Calculate start and end dates
         const x = task.x;
         const width = task.width;
@@ -746,12 +993,15 @@ class GanntChart {
         task.endDate = new Date(endEpochs);
 
         // Update task items
-        console.log(this.data.items);
         for (const item of this.data.items.filter(x => x.id == task.id)) {
             item.startDate = task.startDate;
             item.endDate = task.endDate;
         }
+    }
 
+    #updateViewport() {
+
+        // re-create
         this.updateData(this.data);
     }
 
@@ -781,7 +1031,9 @@ class GanntChart {
                 const deltaX = pt.x - this.mouseDownPoint.x;
                 const x = this.moveTaskArea.x + deltaX;
                 const task = this.dragTask;
-                this.#setTaskX(task,x);
+                task.x = task.left = x;
+                this.#clamp(task);
+                this.#setTaskX(task,task.x);
             }
             return;
         }
@@ -856,7 +1108,6 @@ export function initGantt(id, selector, callback) {
 
 export function updateGantt(id, data) {
     if (window.blazorGanttCharts[id]) {
-        console.log("updating..", data);
         window.blazorGanttCharts[id].updateData(data);
     }
 }

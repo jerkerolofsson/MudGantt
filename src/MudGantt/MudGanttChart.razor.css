@@ -11,6 +11,9 @@
     --clr-grid-lines: rgba(128,128,128,0.2);
     --clr-axis-background: var(--mud-palette-surface);
     --clr-event: #999;
+    --clr-today: var(--mud-palette-info);
+
+    background: var(--mud-palette-background);
 
     touch-action: none;
     overflow: hidden;
@@ -80,12 +83,13 @@
 }
 
 .mud-gantt ::deep path[data-type="progress-handle"] {
-    fill: var(--mud-palette-text-primary);
+    fill: var(--mud-palette-gray-default);
+    stroke: var(--mud-palette-white);
 }
 
 
 .mud-gantt ::deep path[data-type="progress-handle"]:hover {
-    fill: var(--mud-palette-success);
+    fill: var(--mud-palette-white);
 }
 
 
@@ -94,8 +98,8 @@
     fill: none;
 }
 .mud-gantt ::deep path[data-type="link-arrow"] {
-    stroke: none;
-    fill: var(--mud-palette-gray-default);
+    fill: none;
+    stroke: var(--mud-palette-gray-default);
 }
 
 .mud-gantt ::deep line[data-type="grid-line"] {
@@ -134,7 +138,7 @@
 
 .mud-gantt ::deep text {
     dominant-baseline: text-before-edge;
-    font: 8pt sans-serif;
+    font: 10pt sans-serif;
     user-select: none;
     fill: var(--mud-palette-primary-text);
     pointer-events: none;
@@ -142,7 +146,7 @@
 
 .mud-gantt ::deep text[data-type="progress-label"] {    
     dominant-baseline: text-after-edge;
-    font: 6pt sans-serif;
+    font: 8pt sans-serif;
     user-select: none;
     fill: var(--mud-palette-primary-text);
     pointer-events: none;
@@ -153,6 +157,10 @@
     font: 8pt sans-serif;
     fill: var(--mud-palette-text-primary);
     pointer-events: none;
+}
+
+.mud-gantt ::deep line[data-type="today-line"] {
+    stroke: var(--clr-today);
 }
 
 .mud-gantt ::deep line[data-type="event-line"] {
