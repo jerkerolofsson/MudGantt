@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using MudBlazor
 @using MudBlazor.Utilities
+@inject ISnackbar snackbar
 
 <PageTitle>Home</PageTitle>
 
@@ -11,22 +12,28 @@
 
 <h1>MudGanttChart</h1>
 
-<MudGanttChart @bind-Tasks="@_tasks" Events="@_events" Color="@_color" Variant="@_variant" ReadOnly="@_readOnly" />
+<MudGanttChart 
+    TaskClicked="OnTaskClicked"
+    @bind-Tasks="@_tasks" Events="@_events" Color="@_color" Variant="@_variant" ReadOnly="@_readOnly" Dense="@_dense" Size="@_size">
 
-@foreach(var task in _tasks)
-{
-    <MudText>@task.Name @task.StartDate</MudText>
-}
+    <TaskContextMenu>
+        <MudMenuItem OnClick="() => MakeTaskBlue(context)">Make it blue</MudMenuItem>
+        <MudMenuItem Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteTask(context)">Delete @context.Name</MudMenuItem>
+    </TaskContextMenu>
+
+</MudGanttChart>
 
 <MudStack Row>
     <MudPaper Class="pa-5">
         <MudRadioGroup @bind-Value="@_color">
-            <MudRadio Value="Color.Primary">Primary</MudRadio>
-            <MudRadio Value="Color.Secondary">Secondary</MudRadio>
-            <MudRadio Value="Color.Tertiary">Tertiary</MudRadio>
-            <MudRadio Value="Color.Success">Success</MudRadio>
-            <MudRadio Value="Color.Default">Default</MudRadio>
-            <MudRadio Value="Color.Surface">Surface</MudRadio>
+            <MudStack Spacing="1">
+                <MudRadio Value="Color.Primary">Primary</MudRadio>
+                <MudRadio Value="Color.Secondary">Secondary</MudRadio>
+                <MudRadio Value="Color.Tertiary">Tertiary</MudRadio>
+                <MudRadio Value="Color.Success">Success</MudRadio>
+                <MudRadio Value="Color.Default">Default</MudRadio>
+                <MudRadio Value="Color.Surface">Surface</MudRadio>
+            </MudStack>
         </MudRadioGroup>
     </MudPaper>
 
@@ -39,6 +46,17 @@
 
     <MudPaper Class="pa-5">
         <MudCheckBox @bind-Value="@_readOnly">Read-Only</MudCheckBox>
+        <MudCheckBox @bind-Value="@_dense">Dense</MudCheckBox>
+
+        <MudRadioGroup @bind-Value="@_size">
+            <MudStack Spacing="1">
+                <MudRadio Value="Size.Small">Small</MudRadio>
+                <MudRadio Value="Size.Medium">Medium</MudRadio>
+                <MudRadio Value="Size.Large">Large</MudRadio>
+            </MudStack>
+        </MudRadioGroup>
+
+
     </MudPaper>
 
     <MudPaper Class="pa-5">
@@ -52,8 +70,25 @@
 @code {
     private Color _color = Color.Primary;
     private Variant _variant = Variant.Filled;
+    private Size _size = Size.Medium;
     private bool _readOnly = false;
     private bool _darkMode = true;
+    private bool _dense = false;
+
+    private void MakeTaskBlue(MudGanttTask task)
+    {
+        task.Color = "#1176D3"; // Blue color"
+    }
+    private void DeleteTask(MudGanttTask task)
+    {
+        snackbar.Add("Delete " + task.Name);
+        _tasks = _tasks.Where(x => x.Id != task.Id).ToList();
+    }
+
+    private void OnTaskClicked(MudGanttTask task)
+    {
+        snackbar.Add(task.Name + " clicked");
+    }
 
     private IReadOnlyList<MudGanttEvent> _events = [
         new MudGanttEvent { Id = "code-complete", Name = "Code Complete", Date = new DateTimeOffset(2025,6,26,18,0,0,TimeSpan.Zero) },

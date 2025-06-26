@@ -82,7 +82,7 @@ class GanntChart {
         this.options.footerHeight = 50;
 
         this.options.showAxis = true;
-        this.options.progressHandleSize = 7;
+        this.options.progressHandleSize = 10;
         this.options.arrowSize = 7;
         this.options.arrowPadding = 10;
         this.options.taskHeight = 40;
@@ -111,6 +111,7 @@ class GanntChart {
             this.container.appendChild(this.ganttChart);
             
             document.addEventListener("pointerup", (event) => { this.#onMouseUp(event); });
+            this.ganttChart.addEventListener("contextmenu", (event) => { this.#onContextMenu(event); });
             this.ganttChart.addEventListener("mousewheel", (event) => { this.#onMouseWheel(event); });
             this.ganttChart.addEventListener("pointerdown", (event) => { this.#onMouseMove(event); this.#onMouseDown(event); });
             this.ganttChart.addEventListener("pointermove", (event) => { this.#onMouseMove(event); });
@@ -539,6 +540,23 @@ class GanntChart {
             data.items = [];
         }
         this.readOnly = data.readOnly;
+        this.options.taskSpacing = data.dense ? 2 : 10;
+        console.log(`style dense=${data.dense}, size=${data.size}`);
+        switch (data.size) {
+            case 0:
+                this.options.taskHeight = 40;
+                this.options.axisHeight = 40;
+                break;
+            case 2:
+                this.options.taskHeight = 60;
+                this.options.axisHeight = 60;
+                break;
+            case 1:
+            default:
+                this.options.taskHeight = 50;
+                this.options.axisHeight = 50;
+                break;
+        }
 
         this.data = data;
 
@@ -702,11 +720,18 @@ class GanntChart {
         pt.y = evt.clientY;
         return pt.matrixTransform(this.ganttChart.getScreenCTM().inverse());
     }
+
     #onMouseDown(event) {
         if (this.readOnly) {
             return;
         }
         this.mouseDownPoint = this.#cursorPoint(event);
+        if (event.pointerType == "touch" || event.button == 0) {
+            this.isMouseClick = 'maybe';
+        } else {
+            this.isMouseClick = 'nope';
+        }
+
         this.isMoving = false;
         this.moveTaskArea = null;
         this.dragProgress = false;
@@ -954,6 +979,15 @@ class GanntChart {
     }
 
     #onMouseUp(event) {
+
+        // Set to "nope" in onMouseMove if moving away from the 
+        // mouse down location
+        if (this.isMouseClick == 'maybe') {
+            if (this.callback && this.hoverTask) {
+                this.callback.invokeMethodAsync("OnTaskClickedAsync", this.hoverTask.id);
+            }
+        }
+
         if(this.isDragging) {
             if(this.isDragging && this.dragTask) {
                 this.#updateTaskFromEdges();
@@ -980,6 +1014,7 @@ class GanntChart {
             }
             this.#updateViewport();
         }
+
     }
 
     #calculateTaskDatesFromLocation(task) {
@@ -1005,13 +1040,52 @@ class GanntChart {
         this.updateData(this.data);
     }
 
+
+    #onContextMenu(event) {
+        const pt = this.#cursorPoint(event);
+        const nx = pt.x;
+        const ny = pt.y;
+        for (const task of this.tasks) {
+
+            if (task && nx >= task.left && nx < task.right && ny >= task.top && ny < task.bottom) {
+                if (!this.readOnly) {
+                    if (this.callback) {
+                        console.log("OnTaskContextMenuAsync");
+                        this.callback.invokeMethodAsync("OnTaskContextMenuAsync", task.id, event.clientX, event.clientY);
+                    }
+
+                    // Browser support?
+                    if (Object.hasOwn(HTMLElement.prototype, "popover")) {
+                        console.log("OnTaskContextMenuAsync, showing popover..");
+                        const popoverSelector = "#" + this.id + "__popover";
+                        const popover = document.querySelector(popoverSelector);
+                        popover.style.left = event.clientX + "px";
+                        popover.style.top = event.clientY + "px";
+                        console.log(popover.style, event);
+                        popover.showPopover();
+                    }
+
+                    event.stopPropagation();
+                    event.preventDefault();
+                }
+            }
+        }
+    }
+
     #onMouseMove(event) {
 
         const pt = this.#cursorPoint(event);
         const nx = pt.x;
         const ny = pt.y;
 
-        // console.log(`nx=${nx}`, pt);
+        if (this.mouseDownPoint) {
+            const deltaX = Math.abs(pt.x - this.mouseDownPoint.x);
+            if (deltaX > 10) {
+                this.isMouseClick = 'nope';
+            }
+        } else {
+            this.isMouseClick = 'nope';
+        }
 
         if (this.isDragging && this.dragTask && !this.readOnly) {
             if (this.hoverProgressHandle) {

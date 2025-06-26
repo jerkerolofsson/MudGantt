@@ -16,6 +16,17 @@ internal class GanttCallback
     {
         _chart = chart;
     }
+    [JSInvokable]
+    public async Task OnTaskContextMenuAsync(string id, int x, int y)
+    {
+        await _chart.OnTaskContextMenuAsync(id, x, y);
+    }
+
+    [JSInvokable]
+    public async Task OnTaskClickedAsync(string id)
+    {
+        await _chart.OnTaskClickedAsync(id);
+    }
 
     [JSInvokable]
     public async Task OnTaskMovedAsync(string id, string? startIsoDate, string? endIsoDate)

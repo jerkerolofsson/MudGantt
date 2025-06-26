@@ -1,4 +1,5 @@
-﻿namespace MudGantt
+﻿
+namespace MudGantt
 {
     /// <summary>
     /// Internal data passed with JS interop for rendering the Gantt chart.
@@ -19,5 +20,15 @@
         /// If true, the tasks cannot be moved and progress cannot be changed
         /// </summary>
         public bool ReadOnly { get; set; }
+
+        /// <summary>
+        /// Dense layout?
+        /// </summary>
+        public bool Dense { get; set; }
+
+        /// <summary>
+        /// Size of chart items
+        /// </summary>
+        public Size Size { get; set; }
     }
 }

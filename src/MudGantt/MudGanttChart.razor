@@ -1,8 +1,21 @@
 ﻿@namespace MudGantt
 @using Microsoft.JSInterop
+@using MudBlazor
 @implements IAsyncDisposable
 @inject IJSRuntime jsRuntime
 
-<div id="@_id" class="@CssClass" style="@Style">
+<div class="mud-gannt-container">
+    <div id="@Id" class="@CssClass" style="@Style">
     
+    </div>
+
+    @if (TaskContextMenu is not null)
+    {
+        <div popover id="@PopoverId">
+            @if (_contextTask is not null)
+            {
+                <MudMenu @bind-Open="_menuOpen">@TaskContextMenu(_contextTask)</MudMenu>
+            }
+        </div>
+    }
 </div>

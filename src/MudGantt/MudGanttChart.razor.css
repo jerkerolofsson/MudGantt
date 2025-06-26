@@ -144,6 +144,15 @@
     pointer-events: none;
 }
 
+.mud-gantt.mud-size-small ::deep text {
+    font-size: 8pt;
+}
+
+.mud-gantt.mud-size-large ::deep text {
+    font-size: 12pt;
+    font-weight: bold;
+}
+
 .mud-gantt ::deep text[data-type="progress-label"] {    
     dominant-baseline: text-after-edge;
     font: 8pt sans-serif;
@@ -152,6 +161,14 @@
     pointer-events: none;
 }
 
+
+.mud-gantt.mud-size-large ::deep text[data-type="progress-label"] {
+    font-size: 9pt;
+}
+
+.mud-gantt.mud-size-small ::deep text[data-type="progress-label"] {
+    font-size: 7pt;
+}
 
 .mud-gantt ::deep text[data-type="event"] {    
     font: 8pt sans-serif;
@@ -170,4 +187,14 @@
 
 .mud-gantt ::deep path[data-type="event-shape"] {    
     fill: var(--clr-event);
+}
+
+.mud-gannt-container {
+    position: relative;
+}
+
+[popover]:popover-open {
+  position: absolute;
+  inset: unset;
+  margin: 0;
 }
