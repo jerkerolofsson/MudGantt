@@ -59,6 +59,11 @@ namespace MudGantt
         [Parameter] public EventCallback<MudGanttTask> TaskClicked { get; set; }
 
         /// <summary>
+        /// The context menu is opening
+        /// </summary>
+        [Parameter] public EventCallback<MudGanttTask> ContextMenuOpening { get; set; }
+
+        /// <summary>
         /// Tasks changed
         /// </summary>
         [Parameter] public EventCallback<IReadOnlyList<MudGanttTask>> TasksChanged { get; set; }
@@ -167,6 +172,9 @@ namespace MudGantt
             {
                 _menuOpen = true;
                 _contextTask = task;
+
+                await ContextMenuOpening.InvokeAsync(task);
+
                 await InvokeAsync(this.StateHasChanged);
             }
         }   

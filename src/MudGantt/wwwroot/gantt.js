@@ -544,7 +544,7 @@ class GanntChart {
         console.log(`style dense=${data.dense}, size=${data.size}`);
         switch (data.size) {
             case 0:
-                this.options.taskHeight = 40;
+                this.options.taskHeight = 35;
                 this.options.axisHeight = 40;
                 break;
             case 2:
