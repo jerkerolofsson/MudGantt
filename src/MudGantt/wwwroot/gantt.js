@@ -94,6 +94,11 @@ class GanntChart {
         this.tasks = [];
     }
 
+    destroy() {
+        this.isDestroyed = true;
+        document.removeEventListener("pointerup", this.pointerUpDelegate);
+    }
+
     #reset() {
 
         if(!this.ganttChart) {
@@ -109,8 +114,11 @@ class GanntChart {
             //this.ganttChart.setAttribute('width', "100%");
             //this.ganttChart.setAttribute('height', "100%");
             this.container.appendChild(this.ganttChart);
-            
-            document.addEventListener("pointerup", (event) => { this.#onMouseUp(event); });
+
+            const self = this;
+            this.pointerUpDelegate = (event) => { self.#onMouseUp(event); };
+
+            document.addEventListener("pointerup", this.pointerUpDelegate);
             this.ganttChart.addEventListener("contextmenu", (event) => { this.#onContextMenu(event); });
             this.ganttChart.addEventListener("mousewheel", (event) => { this.#onMouseWheel(event); });
             this.ganttChart.addEventListener("pointerdown", (event) => { this.#onMouseMove(event); this.#onMouseDown(event); });
@@ -541,7 +549,7 @@ class GanntChart {
         }
         this.readOnly = data.readOnly;
         this.options.taskSpacing = data.dense ? 2 : 10;
-        console.log(`style dense=${data.dense}, size=${data.size}`);
+        //console.log(`style dense=${data.dense}, size=${data.size}`);
         switch (data.size) {
             case 0:
                 this.options.taskHeight = 35;
@@ -980,12 +988,17 @@ class GanntChart {
 
     #onMouseUp(event) {
 
+        if (this.isDestroyed) {
+            return;
+        }
+
         // Set to "nope" in onMouseMove if moving away from the 
         // mouse down location
         if (this.isMouseClick == 'maybe') {
             if (this.callback && this.hoverTask) {
                 this.callback.invokeMethodAsync("OnTaskClickedAsync", this.hoverTask.id);
             }
+            this.isMouseClick = undefined;
         }
 
         if(this.isDragging) {
@@ -1188,6 +1201,7 @@ export function updateGantt(id, data) {
 
 export function destroyGantt(id) {
     if (window.blazorGanttCharts[id]) {
+        window.blazorGanttCharts[id].destroy();
         delete window.blazorGanttCharts[id]
     }
 }
